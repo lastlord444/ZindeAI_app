@@ -16,14 +16,32 @@ jobs:
         with:
           channel: stable
 
+      - name: Locate Flutter project (pubspec.yaml)
+        id: locate
+        shell: bash
+        run: |
+          set -e
+          PUBSPEC="$(find . -maxdepth 5 -name pubspec.yaml -print -quit)"
+          if [ -z "$PUBSPEC" ]; then
+            echo "pubspec.yaml not found within maxdepth=5"
+            exit 1
+          fi
+          APP_DIR="$(dirname "$PUBSPEC")"
+          echo "Found pubspec at: $PUBSPEC"
+          echo "app_dir=$APP_DIR" >> "$GITHUB_OUTPUT"
+
       - name: Pub get
+        working-directory: ${{ steps.locate.outputs.app_dir }}
         run: flutter pub get
 
       - name: Analyze
+        working-directory: ${{ steps.locate.outputs.app_dir }}
         run: flutter analyze
 
       - name: Test
+        working-directory: ${{ steps.locate.outputs.app_dir }}
         run: flutter test
 
       - name: Build (debug apk)
+        working-directory: ${{ steps.locate.outputs.app_dir }}
         run: flutter build apk --debug
