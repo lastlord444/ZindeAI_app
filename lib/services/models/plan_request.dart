@@ -3,23 +3,23 @@ import 'package:equatable/equatable.dart';
 
 part 'plan_request.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class GeneratePlanRequest extends Equatable {
-  final int targetCalories;
-  final String dietType; // e.g., 'keto', 'vegan'
-  final List<String> allergies;
-  final int numberOfDays;
+  final String userId;
+  final String weekStart; // YYYY-MM-DD
+  final String goalTag; // cut, bulk, maintain
+  // final String budgetMode; // Optional?
 
   const GeneratePlanRequest({
-    required this.targetCalories,
-    required this.dietType,
-    this.allergies = const [],
-    this.numberOfDays = 7,
+    required this.userId,
+    required this.weekStart,
+    required this.goalTag,
+    // this.budgetMode,
   });
 
   factory GeneratePlanRequest.fromJson(Map<String, dynamic> json) => _$GeneratePlanRequestFromJson(json);
   Map<String, dynamic> toJson() => _$GeneratePlanRequestToJson(this);
 
   @override
-  List<Object?> get props => [targetCalories, dietType, allergies, numberOfDays];
+  List<Object?> get props => [userId, weekStart, goalTag];
 }
