@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart';
 import 'errors.dart';
 
 class ApiClient {
@@ -27,7 +28,9 @@ class ApiClient {
     _dio.interceptors.add(LogInterceptor(
       requestBody: true,
       responseBody: true,
-      logPrint: (obj) => print('API_LOG: $obj'),
+      logPrint: (obj) {
+        if (kDebugMode) debugPrint('API_LOG: $obj');
+      },
     ));
     
     // Add Auth Interceptor here later

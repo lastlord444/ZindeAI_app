@@ -10,22 +10,22 @@ class AppBaseException implements Exception {
 }
 
 class NetworkException extends AppBaseException {
-  NetworkException(String message, {dynamic details})
-      : super(message, code: 'NETWORK_ERROR', details: details);
+  NetworkException(super.message, {super.details})
+      : super(code: 'NETWORK_ERROR');
 }
 
 class AuthException extends AppBaseException {
-  AuthException(String message)
-      : super(message, code: 'AUTH_ERROR');
+  AuthException(super.message)
+      : super(code: 'AUTH_ERROR');
 }
 
 class ServerException extends AppBaseException {
   final int? statusCode;
-  ServerException(String message, {this.statusCode, dynamic details})
-      : super(message, code: 'SERVER_ERROR', details: details);
+  ServerException(super.message, {this.statusCode, super.details})
+      : super(code: 'SERVER_ERROR');
 }
 
 class ValidationException extends AppBaseException {
-  ValidationException(String message, {dynamic details})
-      : super(message, code: 'VALIDATION_ERROR', details: details);
+  ValidationException(super.message, {super.details})
+      : super(code: 'VALIDATION_ERROR');
 }
