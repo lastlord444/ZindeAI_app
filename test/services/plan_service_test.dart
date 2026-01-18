@@ -19,17 +19,11 @@ void main() {
   });
 
   group('PlanService Tests', () {
-    final tPlanRequest = GeneratePlanRequest(
+    const tPlanRequest = GeneratePlanRequest(
       targetCalories: 2000,
       dietType: 'balanced',
     );
 
-    final tPlan = Plan(
-      id: '123',
-      title: 'Weekly Plan',
-      createdAt: DateTime.now(),
-      days: [],
-    );
     final tPlanJson = {
       'id': '123',
       'title': 'Weekly Plan',
