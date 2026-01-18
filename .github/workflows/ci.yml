@@ -15,6 +15,11 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: '3.24.x'
+          cache: true
+
+      - name: Disable Analytics
+        run: flutter config --no-analytics
 
       - name: Pub get
         run: flutter pub get
