@@ -23,12 +23,12 @@ void main() {
       userId: 'test-user',
       weekStart: '2024-01-01',
       goalTag: 'cut',
+      budgetMode: 'medium',
     );
 
     final tPlanJson = {
-      'id': '123',
-      'title': 'Weekly Plan',
-      'createdAt': DateTime.now().toIso8601String(),
+      'plan_id': '123',
+      'week_start': '2024-01-01',
       'days': [],
     };
 
@@ -42,7 +42,7 @@ void main() {
 
       // Assert
       expect(result, isA<Plan>());
-      expect(result.id, '123');
+      expect(result.planId, '123');
       verify(mockApiClient.post('/plans/generate', data: tPlanRequest.toJson()));
     });
   });

@@ -14,12 +14,12 @@ class WeekView extends StatelessWidget {
         final day = plan.days[index];
         
         return ExpansionTile(
-          title: Text('Gün ${day.dayNumber}'),
+          title: Text('Tarih ${day.date}'),
           subtitle: Text('${day.meals.length} öğün planlandı'),
           children: day.meals.map((item) => ListTile(
             leading: const Icon(Icons.restaurant),
             title: Text(item.name),
-            subtitle: Text(item.type),
+            subtitle: Text('${item.mealType} - ${item.kcal} kcal'),
             trailing: item.isConsumed 
                 ? const Icon(Icons.check_circle, color: Colors.green)
                 : const Icon(Icons.circle_outlined),

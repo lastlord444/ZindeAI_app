@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/plan_service.dart';
 import '../services/models/plan_models.dart';
 import '../services/models/plan_request.dart';
+import '../widgets/week_view.dart';
 
 class GeneratePlanScreen extends StatefulWidget {
   final PlanService? planService;
@@ -40,6 +41,7 @@ class _GeneratePlanScreenState extends State<GeneratePlanScreen> {
         userId: '00000000-0000-0000-0000-000000000000', // Mock/Test User
         weekStart: DateTime.now().toIso8601String().split('T')[0], // Today YYYY-MM-DD
         goalTag: 'cut',
+        budgetMode: 'medium', // Default
       );
 
       final plan = await _planService.generatePlan(request);
@@ -105,7 +107,7 @@ class _GeneratePlanScreenState extends State<GeneratePlanScreen> {
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey),
                     ),
                   )
-                : const Text('Plan Generated Successfully'), // WeekView(plan: _currentPlan!),
+                : WeekView(plan: _currentPlan!),
           ),
         ],
       ),

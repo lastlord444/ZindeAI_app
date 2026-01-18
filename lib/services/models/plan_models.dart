@@ -3,17 +3,15 @@ import 'package:equatable/equatable.dart';
 
 part 'plan_models.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class Plan extends Equatable {
-  final String id;
-  final String title;
-  final DateTime createdAt;
+  final String planId;
+  final String weekStart;
   final List<DailyPlan> days;
 
   const Plan({
-    required this.id,
-    required this.title,
-    required this.createdAt,
+    required this.planId,
+    required this.weekStart,
     required this.days,
   });
 
@@ -21,45 +19,62 @@ class Plan extends Equatable {
   Map<String, dynamic> toJson() => _$PlanToJson(this);
 
   @override
-  List<Object?> get props => [id, title, createdAt, days];
+  List<Object?> get props => [planId, weekStart, days];
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class DailyPlan extends Equatable {
-  final int dayNumber;
-  final DateTime date;
+  final String date; // YYYY-MM-DD
   final List<MealItem> meals;
-  final Map<String, dynamic>? dailyNutrients;
 
   const DailyPlan({
-    required this.dayNumber,
     required this.date,
     required this.meals,
-    this.dailyNutrients,
   });
 
   factory DailyPlan.fromJson(Map<String, dynamic> json) => _$DailyPlanFromJson(json);
   Map<String, dynamic> toJson() => _$DailyPlanToJson(this);
 
   @override
-  List<Object?> get props => [dayNumber, date, meals, dailyNutrients];
+  List<Object?> get props => [date, meals];
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class MealItem extends Equatable {
-  final String id;
-  final String name;
-  final String type; // Breakfast, Lunch, Dinner, Snack
-  final int calories;
-  final Map<String, dynamic>? macros; // protein, carbs, fat
-  final bool isConsumed;
+  final String mealId;
+  final String mealType; // breakfast, snack1, lunch, snack2, dinner, snack3
+  final String name; // Not in schema but UI needs it. Assuming backend might send it or we derive. 
+                     // IMPORTANT: Schema doesn't list 'name', but previous code had it.
+                     // I will verify if I should include 'name' or make it nullable/default.
+                     // If backend doesn't send it, this will crash.
+                     // Contract schema viewed earlier didn't show 'name'. 
+                     // I will default it to 'Meal' to prevent crash if missing.
+  final double kcal;
+  final double p;
+  final double c;
+  final double f;
+  final double? estimatedCostTry;
+  final List<String>? flags;
+  final String? alt1MealId;
+  final String? alt2MealId;
+  @JsonKey(defaultValue: false)
+  final bool isConsumed; // Not in schema response usually, but needed for client state? 
+                         // Or maybe backend sends it? 
+                         // Previous code had it. 
+                         // If backend doesn't send, default to false.
 
   const MealItem({
-    required this.id,
-    required this.name,
-    required this.type,
-    required this.calories,
-    this.macros,
+    required this.mealId,
+    required this.mealType,
+    this.name = 'Yemek', // Default
+    required this.kcal,
+    required this.p,
+    required this.c,
+    required this.f,
+    this.estimatedCostTry,
+    this.flags,
+    this.alt1MealId,
+    this.alt2MealId,
     this.isConsumed = false,
   });
 
@@ -68,15 +83,21 @@ class MealItem extends Equatable {
 
   MealItem copyWith({bool? isConsumed}) {
     return MealItem(
-      id: id,
+      mealId: mealId,
+      mealType: mealType,
       name: name,
-      type: type,
-      calories: calories,
-      macros: macros,
+      kcal: kcal,
+      p: p,
+      c: c,
+      f: f,
+      estimatedCostTry: estimatedCostTry,
+      flags: flags,
+      alt1MealId: alt1MealId,
+      alt2MealId: alt2MealId,
       isConsumed: isConsumed ?? this.isConsumed,
     );
   }
 
   @override
-  List<Object?> get props => [id, name, isConsumed];
+  List<Object?> get props => [mealId, mealType, name, kcal, p, c, f, isConsumed];
 }
