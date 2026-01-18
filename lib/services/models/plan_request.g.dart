@@ -8,20 +8,15 @@ part of 'plan_request.dart';
 
 GeneratePlanRequest _$GeneratePlanRequestFromJson(Map<String, dynamic> json) =>
     GeneratePlanRequest(
-      targetCalories: (json['targetCalories'] as num).toInt(),
-      dietType: json['dietType'] as String,
-      allergies: (json['allergies'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          const [],
-      numberOfDays: (json['numberOfDays'] as num?)?.toInt() ?? 7,
+      userId: json['user_id'] as String,
+      weekStart: json['week_start'] as String,
+      goalTag: json['goal_tag'] as String,
     );
 
 Map<String, dynamic> _$GeneratePlanRequestToJson(
         GeneratePlanRequest instance) =>
     <String, dynamic>{
-      'targetCalories': instance.targetCalories,
-      'dietType': instance.dietType,
-      'allergies': instance.allergies,
-      'numberOfDays': instance.numberOfDays,
+      'user_id': instance.userId,
+      'week_start': instance.weekStart,
+      'goal_tag': instance.goalTag,
     };
