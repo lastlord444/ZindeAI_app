@@ -20,8 +20,9 @@ void main() {
 
   group('PlanService Tests', () {
     const tPlanRequest = GeneratePlanRequest(
-      targetCalories: 2000,
-      dietType: 'balanced',
+      userId: 'test-user',
+      weekStart: '2024-01-01',
+      goalTag: 'cut',
     );
 
     final tPlanJson = {

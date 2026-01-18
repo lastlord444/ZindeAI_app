@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../services/plan_service.dart';
 import '../services/models/plan_models.dart';
 import '../services/models/plan_request.dart';
-import '../widgets/week_view.dart';
 
 class GeneratePlanScreen extends StatefulWidget {
   final PlanService? planService;
