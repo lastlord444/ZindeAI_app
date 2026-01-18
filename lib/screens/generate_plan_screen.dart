@@ -106,7 +106,7 @@ class _GeneratePlanScreenState extends State<GeneratePlanScreen> {
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey),
                     ),
                   )
-                : WeekView(plan: _currentPlan!),
+                : const Text('Plan Generated Successfully'), // WeekView(plan: _currentPlan!),
           ),
         ],
       ),
