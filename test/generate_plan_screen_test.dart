@@ -8,12 +8,20 @@ import 'package:zindeai_app/services/models/plan_request.dart';
 class FakePlanService implements PlanService {
   @override
   Future<Plan> generatePlan(GeneratePlanRequest request) async {
-    return Plan(id: '1', title: 'Test', createdAt: DateTime.now(), days: const []);
+    return const Plan(
+      planId: '1', 
+      weekStart: '2024-01-01',
+      days: <DailyPlan>[],
+    );
   }
 
   @override
   Future<Plan> getPlan(String planId) async {
-    return Plan(id: planId, title: 'Fake', createdAt: DateTime.now(), days: const []);
+    return Plan(
+      planId: planId, 
+      weekStart: '2024-01-01',
+      days: const <DailyPlan>[],
+    );
   }
 
   @override
