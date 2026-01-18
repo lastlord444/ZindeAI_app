@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/plan_service.dart';
 import '../services/models/plan_models.dart';
 import '../services/models/plan_request.dart';
+import 'dart:math'; // unused import for CI fail test
 
 class GeneratePlanScreen extends StatefulWidget {
   final PlanService? planService;
