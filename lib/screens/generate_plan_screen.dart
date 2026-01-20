@@ -1,9 +1,8 @@
 
 import 'package:flutter/material.dart';
 import '../services/plan_service.dart';
-import '../services/models/plan_models.dart';
 import '../services/models/plan_request.dart';
-import '../widgets/week_view.dart';
+import '../widgets/meal_card.dart';
 
 class GeneratePlanScreen extends StatefulWidget {
   final PlanService? planService;
@@ -25,7 +24,7 @@ class _GeneratePlanScreenState extends State<GeneratePlanScreen> {
     super.initState();
     _planService = widget.planService ?? PlanService();
   }
-  Plan? _currentPlan;
+  // Plan? _currentPlan; // Unused in MVP
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -44,10 +43,10 @@ class _GeneratePlanScreenState extends State<GeneratePlanScreen> {
         budgetMode: 'medium', // Default
       );
 
-      final plan = await _planService.generatePlan(request);
+      await _planService.generatePlan(request);
 
       setState(() {
-        _currentPlan = plan;
+        // _currentPlan = plan; // Unused in MVP
         _isLoading = false;
       });
     } catch (e) {
@@ -99,15 +98,17 @@ class _GeneratePlanScreenState extends State<GeneratePlanScreen> {
               ),
             ),
           Expanded(
-            child: _currentPlan == null
-                ? Center(
-                    child: Text(
-                      'Henüz bir planınız yok.\nYukarıdaki butona basarak oluşturun.',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey),
-                    ),
-                  )
-                : WeekView(plan: _currentPlan!),
+            child: ListView(
+              padding: const EdgeInsets.only(bottom: 20),
+              children: const [
+                 MealCard(mealName: "Yulaf Ezmesi & Yumurta", calories: "350", alternatives: ["Menemen", "Toast"]),
+                 MealCard(mealName: "Izgara Tavuk Salata", calories: "450", alternatives: ["Ton Balıklı Salata", "Mercimek Çorbası"]),
+                 MealCard(mealName: "Ara Öğün: Kuruyemiş", calories: "150"),
+                 MealCard(mealName: "Akşam: Somon & Sebze", calories: "500", alternatives: ["Köfte & Piyaz"]),
+                 MealCard(mealName: "Protein Shake", calories: "200"),
+                 MealCard(mealName: "Bitki Çayı & Lor", calories: "100"),
+              ],
+            ),
           ),
         ],
       ),
