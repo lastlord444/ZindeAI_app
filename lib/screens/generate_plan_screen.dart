@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../services/plan_service.dart';
 import '../services/models/plan_models.dart';
 import '../services/models/plan_request.dart';
-import '../services/models/plan_request.dart';
 import '../widgets/meal_card.dart';
 
 class GeneratePlanScreen extends StatefulWidget {
@@ -26,7 +25,7 @@ class _GeneratePlanScreenState extends State<GeneratePlanScreen> {
     super.initState();
     _planService = widget.planService ?? PlanService();
   }
-  Plan? _currentPlan;
+  // Plan? _currentPlan; // Unused in MVP
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -48,7 +47,7 @@ class _GeneratePlanScreenState extends State<GeneratePlanScreen> {
       final plan = await _planService.generatePlan(request);
 
       setState(() {
-        _currentPlan = plan;
+        // _currentPlan = plan; // Unused in MVP
         _isLoading = false;
       });
     } catch (e) {
