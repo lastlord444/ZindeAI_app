@@ -35,6 +35,12 @@ class _MealCardState extends State<MealCard> {
     _loadState();
   }
 
+  void _toggleLock() {
+    setState(() {
+      isLocked = !isLocked;
+    });
+  }
+
   Future<void> _loadState() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
