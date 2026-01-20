@@ -1,7 +1,6 @@
 
 import 'package:flutter/material.dart';
 import '../services/plan_service.dart';
-import '../services/models/plan_models.dart';
 import '../services/models/plan_request.dart';
 import '../widgets/meal_card.dart';
 
@@ -44,7 +43,7 @@ class _GeneratePlanScreenState extends State<GeneratePlanScreen> {
         budgetMode: 'medium', // Default
       );
 
-      final plan = await _planService.generatePlan(request);
+      await _planService.generatePlan(request);
 
       setState(() {
         // _currentPlan = plan; // Unused in MVP
