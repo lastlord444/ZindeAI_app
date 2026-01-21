@@ -14,7 +14,6 @@ GeneratePlanRequest _$GeneratePlanRequestFromJson(Map<String, dynamic> json) =>
       budgetMode: json['budget_mode'] as String,
       prepMaxMinutes: (json['prep_max_minutes'] as num?)?.toInt(),
       fishPreference: json['fish_preference'] as String?,
-      tariffMode: json['tariff_mode'] as String? ?? 'normal',
     );
 
 Map<String, dynamic> _$GeneratePlanRequestToJson(
@@ -26,5 +25,4 @@ Map<String, dynamic> _$GeneratePlanRequestToJson(
       'budget_mode': instance.budgetMode,
       'prep_max_minutes': instance.prepMaxMinutes,
       'fish_preference': instance.fishPreference,
-      'tariff_mode': instance.tariffMode,
     };

@@ -18,15 +18,54 @@ class GeneratePlanScreen extends StatefulWidget {
 class _GeneratePlanScreenState extends State<GeneratePlanScreen> {
   late final PlanService _planService;
 
-  @override
-  void initState() {
-    super.initState();
-    _planService = widget.planService ?? PlanService();
-  }
-
   // Plan? _currentPlan; // Unused in MVP
   bool _isLoading = false;
   String? _errorMessage;
+
+  final Set<String> _activeMeals = {};
+
+  final List<String> _allMealTypes = [
+    'breakfast',
+    'snack1',
+    'lunch',
+    'snack2',
+    'dinner',
+    'snack3'
+  ];
+
+  final Map<String, dynamic> _mockMealData = {
+    'breakfast': {
+      'name': 'Yulaflı Kahvaltı',
+      'kcal': '400',
+      'alts': ['Omlet', 'Menemen']
+    },
+    'snack1': {
+      'name': 'Elma + Ceviz',
+      'kcal': '150',
+      'alts': ['Muz', 'Badem']
+    },
+    'lunch': {
+      'name': 'Izgara Tavuk',
+      'kcal': '600',
+      'alts': ['Köfte', 'Hindi']
+    },
+    'snack2': {
+      'name': 'Protein Bar',
+      'kcal': '200',
+      'alts': ['Yoğurt', 'Ayran']
+    },
+    'dinner': {
+      'name': 'Somon + Salata',
+      'kcal': '500',
+      'alts': ['Ton Balığı', 'Steak']
+    },
+    'snack3': {
+      'name': 'Lor Peyniri',
+      'kcal': '100',
+      'alts': ['Süt', 'Kefir']
+    },
+  };
+
   @override
   void initState() {
     super.initState();
@@ -114,7 +153,7 @@ class _GeneratePlanScreenState extends State<GeneratePlanScreen> {
               itemBuilder: (context, index) {
                 final type = _allMealTypes[index];
                 final isActive = _activeMeals.contains(type);
-                final data = _mockMealData[type];
+                final data = _mockMealData[type]!;
 
                 return MealCard(
                   mealName: data['name'],
