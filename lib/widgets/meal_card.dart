@@ -7,14 +7,16 @@ class MealCard extends StatefulWidget {
   final List<String> alternatives;
   final bool initialLocked;
   final bool initialConsumed;
+  final bool isActive;
+  final VoidCallback? onToggleActive;
 
   const MealCard({
     super.key,
     required this.mealName,
     required this.calories,
     this.alternatives = const [],
-    this.initialLocked = false,
-    this.initialConsumed = false,
+    this.isActive = true,
+    this.onToggleActive,
   });
 
   @override
@@ -44,7 +46,8 @@ class _MealCardState extends State<MealCard> {
   Future<void> _loadState() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      isConsumed = prefs.getBool('consumed_${widget.mealName}') ?? widget.initialConsumed;
+      isConsumed = prefs.getBool('consumed_${widget.mealName}') ??
+          widget.initialConsumed;
     });
   }
 
@@ -68,7 +71,8 @@ class _MealCardState extends State<MealCard> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Alternatif Seçin", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text("Alternatif Seçin",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
               if (widget.alternatives.isEmpty)
                 const Text("Alternatif yok.")
@@ -93,57 +97,81 @@ class _MealCardState extends State<MealCard> {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                // Checkbox for Consumed
-                Checkbox(
-                  value: isConsumed,
-                  onChanged: _toggleConsumed,
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      color: widget.isActive ? null : Colors.grey.shade200,
+      elevation: widget.isActive ? 4 : 0,
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Opacity(
+              opacity: widget.isActive ? 1.0 : 0.5,
+              child: Column(
+                children: [
+                  Row(
                     children: [
-                      Text(
-                        currentMeal,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          decoration: isConsumed ? TextDecoration.lineThrough : null,
+                      // Checkbox for Consumed
+                      Checkbox(
+                        value: isConsumed,
+                        onChanged: widget.isActive ? _toggleConsumed : null,
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              currentMeal,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                decoration: isConsumed
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                              ),
+                            ),
+                            Text("${widget.calories} kcal",
+                                style: const TextStyle(color: Colors.grey)),
+                            const SizedBox(height: 4),
+                            // Mock Badges
+                            Row(
+                              children: [
+                                _buildBadge("Budget", Colors.green),
+                                const SizedBox(width: 4),
+                                _buildBadge("High Protein", Colors.blue),
+                              ],
+                            )
+                          ],
                         ),
                       ),
-                      Text("${widget.calories} kcal", style: const TextStyle(color: Colors.grey)),
-                      const SizedBox(height: 4),
-                      // Mock Badges
-                      Row(
-                        children: [
-                          _buildBadge("Budget", Colors.green),
-                          const SizedBox(width: 4),
-                          _buildBadge("High Protein", Colors.blue),
-                        ],
-                      )
+                      // Lock Button
+                      IconButton(
+                        icon: Icon(isLocked ? Icons.lock : Icons.lock_open),
+                        color: isLocked ? Colors.red : Colors.grey,
+                        onPressed: widget.isActive ? _toggleLock : null,
+                      ),
+                      // Swap Button
+                      IconButton(
+                        icon: const Icon(Icons.swap_horiz),
+                        onPressed: (widget.isActive && !isLocked)
+                            ? _showSwapModal
+                            : null,
+                      ),
                     ],
                   ),
-                ),
-                // Lock Button
-                IconButton(
-                  icon: Icon(isLocked ? Icons.lock : Icons.lock_open),
-                  color: isLocked ? Colors.red : Colors.grey,
-                  onPressed: _toggleLock,
-                ),
-                // Swap Button
-                IconButton(
-                  icon: const Icon(Icons.swap_horiz),
-                  onPressed: isLocked ? null : _showSwapModal,
-                ),
-              ],
+                ],
+              ),
             ),
-          ],
-        ),
+          ),
+          if (!widget.isActive)
+            Positioned.fill(
+              child: Center(
+                child: ElevatedButton.icon(
+                  onPressed: widget.onToggleActive,
+                  icon: const Icon(Icons.add),
+                  label: const Text("Öğün Ekle"),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

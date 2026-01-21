@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import '../services/plan_service.dart';
 import '../services/models/plan_request.dart';
@@ -6,7 +5,7 @@ import '../widgets/meal_card.dart';
 
 class GeneratePlanScreen extends StatefulWidget {
   final PlanService? planService;
-  
+
   const GeneratePlanScreen({
     super.key,
     this.planService,
@@ -24,9 +23,15 @@ class _GeneratePlanScreenState extends State<GeneratePlanScreen> {
     super.initState();
     _planService = widget.planService ?? PlanService();
   }
+
   // Plan? _currentPlan; // Unused in MVP
   bool _isLoading = false;
   String? _errorMessage;
+  @override
+  void initState() {
+    super.initState();
+    _planService = widget.planService ?? PlanService();
+  }
 
   Future<void> _generatePlan() async {
     setState(() {
@@ -38,7 +43,8 @@ class _GeneratePlanScreenState extends State<GeneratePlanScreen> {
       // Mock request for now, or simple default
       final request = GeneratePlanRequest(
         userId: '00000000-0000-0000-0000-000000000000', // Mock/Test User
-        weekStart: DateTime.now().toIso8601String().split('T')[0], // Today YYYY-MM-DD
+        weekStart:
+            DateTime.now().toIso8601String().split('T')[0], // Today YYYY-MM-DD
         goalTag: 'cut',
         budgetMode: 'medium', // Default
       );
@@ -66,14 +72,18 @@ class _GeneratePlanScreenState extends State<GeneratePlanScreen> {
       ),
       body: Column(
         children: [
+          // Tariff Selector removed for MVP
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: _isLoading ? null : _generatePlan,
-                icon: _isLoading 
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2))
                     : const Icon(Icons.auto_awesome),
                 label: Text(_isLoading ? 'Oluşturuluyor...' : 'Plan Oluştur'),
                 style: ElevatedButton.styleFrom(
@@ -98,16 +108,30 @@ class _GeneratePlanScreenState extends State<GeneratePlanScreen> {
               ),
             ),
           Expanded(
-            child: ListView(
+            child: ListView.builder(
               padding: const EdgeInsets.only(bottom: 20),
-              children: const [
-                 MealCard(mealName: "Yulaf Ezmesi & Yumurta", calories: "350", alternatives: ["Menemen", "Toast"]),
-                 MealCard(mealName: "Izgara Tavuk Salata", calories: "450", alternatives: ["Ton Balıklı Salata", "Mercimek Çorbası"]),
-                 MealCard(mealName: "Ara Öğün: Kuruyemiş", calories: "150"),
-                 MealCard(mealName: "Akşam: Somon & Sebze", calories: "500", alternatives: ["Köfte & Piyaz"]),
-                 MealCard(mealName: "Protein Shake", calories: "200"),
-                 MealCard(mealName: "Bitki Çayı & Lor", calories: "100"),
-              ],
+              itemCount: _allMealTypes.length,
+              itemBuilder: (context, index) {
+                final type = _allMealTypes[index];
+                final isActive = _activeMeals.contains(type);
+                final data = _mockMealData[type];
+
+                return MealCard(
+                  mealName: data['name'],
+                  calories: data['kcal'],
+                  alternatives: List<String>.from(data['alts']),
+                  isActive: isActive,
+                  onToggleActive: () {
+                    setState(() {
+                      if (isActive) {
+                        _activeMeals.remove(type);
+                      } else {
+                        _activeMeals.add(type);
+                      }
+                    });
+                  },
+                );
+              },
             ),
           ),
         ],

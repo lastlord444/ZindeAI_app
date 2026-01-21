@@ -9,10 +9,8 @@ class PlanService {
 
   /// Generates a new diet plan based on user preferences.
   Future<Plan> generatePlan(GeneratePlanRequest request) async {
-    final responseData = await _apiClient.post(
-      '/plans/generate', 
-      data: request.toJson()
-    );
+    final responseData =
+        await _apiClient.post('/plans/generate', data: request.toJson());
     return Plan.fromJson(responseData);
   }
 
@@ -23,7 +21,8 @@ class PlanService {
   }
 
   /// Marks a specific meal as consumed.
-  Future<void> markMealConsumed(String planId, String mealId, bool isConsumed) async {
+  Future<void> markMealConsumed(
+      String planId, String mealId, bool isConsumed) async {
     await _apiClient.put(
       '/plans/$planId/meals/$mealId/consume',
       data: {'isConsumed': isConsumed},

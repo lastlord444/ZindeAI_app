@@ -15,8 +15,7 @@ class NetworkException extends AppBaseException {
 }
 
 class AuthException extends AppBaseException {
-  AuthException(super.message)
-      : super(code: 'AUTH_ERROR');
+  AuthException(super.message) : super(code: 'AUTH_ERROR');
 }
 
 class ServerException extends AppBaseException {

@@ -43,7 +43,8 @@ void main() {
       // Assert
       expect(result, isA<Plan>());
       expect(result.planId, '123');
-      verify(mockApiClient.post('/plans/generate', data: tPlanRequest.toJson()));
+      verify(
+          mockApiClient.post('/plans/generate', data: tPlanRequest.toJson()));
     });
   });
 }

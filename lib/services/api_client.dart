@@ -14,7 +14,7 @@ class ApiClient {
   ApiClient._internal() {
     // Load base URL from .env or use a default
     final baseUrl = dotenv.env['API_BASE_URL'] ?? 'https://api.zindeai.com/v1';
-    
+
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 10),
@@ -32,11 +32,12 @@ class ApiClient {
         if (kDebugMode) debugPrint('API_LOG: $obj');
       },
     ));
-    
+
     // Add Auth Interceptor here later
   }
 
-  Future<dynamic> get(String path, {Map<String, dynamic>? queryParameters}) async {
+  Future<dynamic> get(String path,
+      {Map<String, dynamic>? queryParameters}) async {
     try {
       final response = await _dio.get(path, queryParameters: queryParameters);
       return response.data;
@@ -73,7 +74,7 @@ class ApiClient {
   }
 
   Exception _handleDioError(DioException error) {
-    if (error.type == DioExceptionType.connectionTimeout || 
+    if (error.type == DioExceptionType.connectionTimeout ||
         error.type == DioExceptionType.receiveTimeout) {
       return NetworkException('Connection timed out', details: error.message);
     }
@@ -81,8 +82,8 @@ class ApiClient {
     if (error.response != null) {
       final statusCode = error.response?.statusCode;
       final data = error.response?.data;
-      final message = (data is Map && data['message'] != null) 
-          ? data['message'] 
+      final message = (data is Map && data['message'] != null)
+          ? data['message']
           : error.message;
 
       if (statusCode == 401 || statusCode == 403) {
@@ -92,7 +93,8 @@ class ApiClient {
         return ValidationException('Validation Error: $message', details: data);
       }
       if (statusCode != null && statusCode >= 500) {
-        return ServerException('Server Error: $message', statusCode: statusCode, details: data);
+        return ServerException('Server Error: $message',
+            statusCode: statusCode, details: data);
       }
     }
 

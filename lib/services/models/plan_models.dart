@@ -32,7 +32,8 @@ class DailyPlan extends Equatable {
     required this.meals,
   });
 
-  factory DailyPlan.fromJson(Map<String, dynamic> json) => _$DailyPlanFromJson(json);
+  factory DailyPlan.fromJson(Map<String, dynamic> json) =>
+      _$DailyPlanFromJson(json);
   Map<String, dynamic> toJson() => _$DailyPlanToJson(this);
 
   @override
@@ -43,12 +44,13 @@ class DailyPlan extends Equatable {
 class MealItem extends Equatable {
   final String mealId;
   final String mealType; // breakfast, snack1, lunch, snack2, dinner, snack3
-  final String name; // Not in schema but UI needs it. Assuming backend might send it or we derive. 
-                     // IMPORTANT: Schema doesn't list 'name', but previous code had it.
-                     // I will verify if I should include 'name' or make it nullable/default.
-                     // If backend doesn't send it, this will crash.
-                     // Contract schema viewed earlier didn't show 'name'. 
-                     // I will default it to 'Meal' to prevent crash if missing.
+  final String
+      name; // Not in schema but UI needs it. Assuming backend might send it or we derive.
+  // IMPORTANT: Schema doesn't list 'name', but previous code had it.
+  // I will verify if I should include 'name' or make it nullable/default.
+  // If backend doesn't send it, this will crash.
+  // Contract schema viewed earlier didn't show 'name'.
+  // I will default it to 'Meal' to prevent crash if missing.
   final double kcal;
   final double p;
   final double c;
@@ -58,10 +60,11 @@ class MealItem extends Equatable {
   final String? alt1MealId;
   final String? alt2MealId;
   @JsonKey(defaultValue: false)
-  final bool isConsumed; // Not in schema response usually, but needed for client state? 
-                         // Or maybe backend sends it? 
-                         // Previous code had it. 
-                         // If backend doesn't send, default to false.
+  final bool
+      isConsumed; // Not in schema response usually, but needed for client state?
+  // Or maybe backend sends it?
+  // Previous code had it.
+  // If backend doesn't send, default to false.
 
   const MealItem({
     required this.mealId,
@@ -78,7 +81,8 @@ class MealItem extends Equatable {
     this.isConsumed = false,
   });
 
-  factory MealItem.fromJson(Map<String, dynamic> json) => _$MealItemFromJson(json);
+  factory MealItem.fromJson(Map<String, dynamic> json) =>
+      _$MealItemFromJson(json);
   Map<String, dynamic> toJson() => _$MealItemToJson(this);
 
   MealItem copyWith({bool? isConsumed}) {
@@ -99,5 +103,6 @@ class MealItem extends Equatable {
   }
 
   @override
-  List<Object?> get props => [mealId, mealType, name, kcal, p, c, f, isConsumed];
+  List<Object?> get props =>
+      [mealId, mealType, name, kcal, p, c, f, isConsumed];
 }

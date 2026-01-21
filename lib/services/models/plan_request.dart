@@ -21,9 +21,11 @@ class GeneratePlanRequest extends Equatable {
     this.fishPreference,
   });
 
-  factory GeneratePlanRequest.fromJson(Map<String, dynamic> json) => _$GeneratePlanRequestFromJson(json);
+  factory GeneratePlanRequest.fromJson(Map<String, dynamic> json) =>
+      _$GeneratePlanRequestFromJson(json);
   Map<String, dynamic> toJson() => _$GeneratePlanRequestToJson(this);
 
   @override
-  List<Object?> get props => [userId, weekStart, goalTag, budgetMode, prepMaxMinutes, fishPreference];
+  List<Object?> get props =>
+      [userId, weekStart, goalTag, budgetMode, prepMaxMinutes, fishPreference];
 }

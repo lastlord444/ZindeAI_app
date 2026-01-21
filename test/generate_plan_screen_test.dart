@@ -9,7 +9,7 @@ class FakePlanService implements PlanService {
   @override
   Future<Plan> generatePlan(GeneratePlanRequest request) async {
     return const Plan(
-      planId: '1', 
+      planId: '1',
       weekStart: '2024-01-01',
       days: <DailyPlan>[],
     );
@@ -18,14 +18,15 @@ class FakePlanService implements PlanService {
   @override
   Future<Plan> getPlan(String planId) async {
     return Plan(
-      planId: planId, 
+      planId: planId,
       weekStart: '2024-01-01',
       days: const <DailyPlan>[],
     );
   }
 
   @override
-  Future<void> markMealConsumed(String planId, String mealId, bool isConsumed) async {}
+  Future<void> markMealConsumed(
+      String planId, String mealId, bool isConsumed) async {}
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
