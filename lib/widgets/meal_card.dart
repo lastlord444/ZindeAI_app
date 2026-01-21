@@ -15,6 +15,8 @@ class MealCard extends StatefulWidget {
     required this.mealName,
     required this.calories,
     this.alternatives = const [],
+    this.initialLocked = false,
+    this.initialConsumed = false,
     this.isActive = true,
     this.onToggleActive,
   });
