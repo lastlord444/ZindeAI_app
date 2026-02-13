@@ -21,9 +21,13 @@ class AlgoConfig {
   static String get baseUrl {
     // 1. dart-define
     if (_dartDefineUrl.isNotEmpty) return _dartDefineUrl;
-    // 2. dotenv (assets/.env)
-    final envUrl = dotenv.env['ALGO_BASE_URL'];
-    if (envUrl != null && envUrl.isNotEmpty) return envUrl;
+    // 2. dotenv (assets/.env) — web'de yüklenmemiş olabilir
+    try {
+      final envUrl = dotenv.env['ALGO_BASE_URL'];
+      if (envUrl != null && envUrl.isNotEmpty) return envUrl;
+    } catch (_) {
+      // Web'de dotenv erişimi başarısız olabilir, devam et
+    }
     // 3. varsayılan (Android emulator host erişimi)
     return 'http://10.0.2.2:8000';
   }
