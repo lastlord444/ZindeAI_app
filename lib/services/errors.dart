@@ -29,3 +29,27 @@ class ValidationException extends AppBaseException {
   ValidationException(super.message, {super.details})
       : super(code: 'VALIDATION_ERROR');
 }
+
+/// Swap alternatives 422 INSUFFICIENT_POOL hatası.
+class InsufficientPoolException extends AppBaseException {
+  final Map<String, dynamic>? filters;
+  final String? suggestion;
+
+  InsufficientPoolException(
+    super.message, {
+    this.filters,
+    this.suggestion,
+  }) : super(code: 'INSUFFICIENT_POOL');
+
+  factory InsufficientPoolException.fromJson(Map<String, dynamic> json) {
+    return InsufficientPoolException(
+      json['message'] as String? ?? 'Alternatif havuzu yetersiz',
+      filters: json['filters'] as Map<String, dynamic>?,
+      suggestion: json['suggestion'] as String?,
+    );
+  }
+
+  @override
+  String toString() =>
+      'InsufficientPoolException: $message (suggestion: $suggestion)';
+}
