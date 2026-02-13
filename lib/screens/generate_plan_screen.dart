@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/plan_service.dart';
 import '../services/models/plan_request.dart';
 import '../widgets/meal_card.dart';
+import '../widgets/week_view.dart';
 
 class GeneratePlanScreen extends StatefulWidget {
   final PlanService? planService;
@@ -16,14 +17,23 @@ class GeneratePlanScreen extends StatefulWidget {
   State<GeneratePlanScreen> createState() => _GeneratePlanScreenState();
 }
 
-class _GeneratePlanScreenState extends State<GeneratePlanScreen> {
+class _GeneratePlanScreenState extends State<GeneratePlanScreen> with SingleTickerProviderStateMixin {
   late final PlanService _planService;
+  late final TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _planService = widget.planService ?? PlanService();
+    _tabController = TabController(length: 2, vsync: this);
   }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   // Plan? _currentPlan; // Unused in MVP
   bool _isLoading = false;
   String? _errorMessage;
@@ -63,6 +73,13 @@ class _GeneratePlanScreenState extends State<GeneratePlanScreen> {
       appBar: AppBar(
         title: const Text('ZindeAI Planlayıcı'),
         centerTitle: true,
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.today), text: 'Günlük'),
+            Tab(icon: Icon(Icons.calendar_month), text: 'Haftalık'),
+          ],
+        ),
       ),
       body: Column(
         children: [
@@ -98,15 +115,26 @@ class _GeneratePlanScreenState extends State<GeneratePlanScreen> {
               ),
             ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.only(bottom: 20),
-              children: const [
-                 MealCard(mealName: "Yulaf Ezmesi & Yumurta", calories: "350", alternatives: ["Menemen", "Toast"]),
-                 MealCard(mealName: "Izgara Tavuk Salata", calories: "450", alternatives: ["Ton Balıklı Salata", "Mercimek Çorbası"]),
-                 MealCard(mealName: "Ara Öğün: Kuruyemiş", calories: "150"),
-                 MealCard(mealName: "Akşam: Somon & Sebze", calories: "500", alternatives: ["Köfte & Piyaz"]),
-                 MealCard(mealName: "Protein Shake", calories: "200"),
-                 MealCard(mealName: "Bitki Çayı & Lor", calories: "100"),
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                // Günlük tab: Statik meal cards (demo)
+                ListView(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  children: const [
+                     MealCard(mealName: "Yulaf Ezmesi & Yumurta", calories: "350", alternatives: ["Menemen", "Toast"]),
+                     MealCard(mealName: "Izgara Tavuk Salata", calories: "450", alternatives: ["Ton Balıklı Salata", "Mercimek Çorbası"]),
+                     MealCard(mealName: "Ara Öğün: Kuruyemiş", calories: "150"),
+                     MealCard(mealName: "Akşam: Somon & Sebze", calories: "500", alternatives: ["Köfte & Piyaz"]),
+                     MealCard(mealName: "Protein Shake", calories: "200"),
+                     MealCard(mealName: "Bitki Çayı & Lor", calories: "100"),
+                  ],
+                ),
+                // Haftalık tab: Week view with loading/empty states
+                WeekView(
+                  plan: null, // _currentPlan (MVP'de yok, demo için null)
+                  isLoading: _isLoading,
+                ),
               ],
             ),
           ),
