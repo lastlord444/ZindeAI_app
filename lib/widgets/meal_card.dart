@@ -42,6 +42,7 @@ class _MealCardState extends State<MealCard> {
   bool _isSwapLoading = false;
   bool _isSwapDisabled = false;
   String? _swapErrorMessage;
+  bool _lastSwapWasNetworkError = false;
 
   AlgoClient get _algoClient => widget.algoClient ?? AlgoClient();
 
@@ -63,8 +64,10 @@ class _MealCardState extends State<MealCard> {
 
   Future<void> _loadState() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     setState(() {
-      isConsumed = prefs.getBool('consumed_${widget.mealName}') ?? widget.initialConsumed;
+      isConsumed =
+          prefs.getBool('consumed_${widget.mealName}') ?? widget.initialConsumed;
     });
   }
 
@@ -78,6 +81,7 @@ class _MealCardState extends State<MealCard> {
   }
 
   /// API'den swap alternatifleri getir ve BottomSheet göster.
+  /// Debounce: _isSwapLoading kontrolü ile aynı anda 2 istek engellenir.
   Future<void> _showSwapModal() async {
     if (isLocked || _isSwapDisabled || _isSwapLoading) return;
 
@@ -90,6 +94,7 @@ class _MealCardState extends State<MealCard> {
     setState(() {
       _isSwapLoading = true;
       _swapErrorMessage = null;
+      _lastSwapWasNetworkError = false;
     });
 
     try {
@@ -108,9 +113,9 @@ class _MealCardState extends State<MealCard> {
         _isSwapLoading = false;
       });
 
-      // 2'den az alternatif → gösterme (hata say)
+      // 2'den az alternatif → empty state göster
       if (response.alternatives.length < 2) {
-        _showSwapError('Yeterli alternatif bulunamadı.');
+        _showEmptyAlternativesSheet();
         return;
       }
 
@@ -122,36 +127,133 @@ class _MealCardState extends State<MealCard> {
         _isSwapDisabled = true;
         _swapErrorMessage = e.suggestion ?? e.message;
       });
-      _showSwapError(e.suggestion ?? e.message);
+      _showErrorSnackBar(
+        e.suggestion ?? e.message,
+        isRetryable: false,
+      );
     } on NetworkException catch (e) {
       if (!mounted) return;
       setState(() {
         _isSwapLoading = false;
+        _lastSwapWasNetworkError = true;
+        _swapErrorMessage = 'Bağlantı hatası: ${e.message}';
       });
-      _showSwapError(e.message);
+      _showErrorSnackBar(
+        'Bağlantı hatası. Lütfen internet bağlantınızı kontrol edin.',
+        isRetryable: true,
+      );
     } on AppBaseException catch (e) {
       if (!mounted) return;
       setState(() {
         _isSwapLoading = false;
+        _swapErrorMessage = e.message;
       });
-      _showSwapError(e.message);
+      _showErrorSnackBar(e.message, isRetryable: true);
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isSwapLoading = false;
+        _swapErrorMessage = 'Beklenmeyen hata oluştu.';
       });
-      _showSwapError('Beklenmeyen hata oluştu.');
+      _showErrorSnackBar('Beklenmeyen hata oluştu.', isRetryable: true);
     }
   }
 
-  void _showSwapError(String message) {
+  /// Başarılı swap sonrası yeşil SnackBar göster.
+  void _showSuccessSnackBar(String newMealName) {
     if (!mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.orange.shade700,
-        duration: const Duration(seconds: 4),
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text('Alternatif uygulandı: $newMealName'),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.green.shade700,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
       ),
+    );
+  }
+
+  /// Hata SnackBar: kırmızı, opsiyonel retry aksiyonu.
+  void _showErrorSnackBar(String message, {bool isRetryable = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: isRetryable ? 6 : 4),
+        action: isRetryable
+            ? SnackBarAction(
+                label: 'Tekrar Dene',
+                textColor: Colors.white,
+                onPressed: _showSwapModal,
+              )
+            : null,
+      ),
+    );
+  }
+
+  /// Alternatif bulunamadı → BottomSheet empty state.
+  void _showEmptyAlternativesSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.search_off, size: 48, color: Colors.grey.shade400),
+              const SizedBox(height: 12),
+              const Text(
+                'Alternatif Bulunamadı',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Bu öğüne uygun yeterli alternatif yok.\n'
+                'Filtrelerinizi gevşetmeyi veya farklı bir öğün denemeyi deneyin.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  TextButton.icon(
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Tekrar Dene'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _showSwapModal();
+                    },
+                  ),
+                  TextButton.icon(
+                    icon: const Icon(Icons.close),
+                    label: const Text('Kapat'),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -159,41 +261,74 @@ class _MealCardState extends State<MealCard> {
   void _showApiSwapModal(SwapAlternativesResponse response) {
     showModalBottomSheet(
       context: context,
-      builder: (context) {
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
         return Container(
           padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Alternatif Seçin (${response.tolerance})',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Text(
+                'Alternatif Seçin',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               Text(
-                '${response.count} alternatif bulundu',
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                '${response.count} alternatif  •  ${response.tolerance}',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
-              const SizedBox(height: 10),
-              ...response.alternatives.map((alt) => ListTile(
-                    leading: const Icon(Icons.restaurant, color: Colors.green),
-                    title: Text(alt.ad),
-                    subtitle: Text(
-                      '${alt.kalori.toStringAsFixed(0)} kcal  •  '
-                      'P: ${alt.protein.toStringAsFixed(0)}g  '
-                      'K: ${alt.karb.toStringAsFixed(0)}g  '
-                      'Y: ${alt.yag.toStringAsFixed(0)}g  •  '
-                      '${alt.porsiyon} (${alt.porsiyonG.toStringAsFixed(0)}g)',
-                      style: const TextStyle(fontSize: 11),
+              const Divider(height: 20),
+              ...response.alternatives.map((alt) => Card(
+                    elevation: 0,
+                    color: Colors.grey.shade50,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.green.shade50,
+                        child: Icon(Icons.restaurant,
+                            color: Colors.green.shade700, size: 20),
+                      ),
+                      title: Text(alt.ad,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: Text(
+                        '${alt.kalori.toStringAsFixed(0)} kcal  •  '
+                        'P: ${alt.protein.toStringAsFixed(0)}g  '
+                        'K: ${alt.karb.toStringAsFixed(0)}g  '
+                        'Y: ${alt.yag.toStringAsFixed(0)}g\n'
+                        '${alt.porsiyon} porsiyon (${alt.porsiyonG.toStringAsFixed(0)}g)',
+                        style: const TextStyle(fontSize: 11, height: 1.4),
+                      ),
+                      isThreeLine: true,
+                      trailing: Icon(Icons.chevron_right,
+                          color: Colors.grey.shade400),
+                      onTap: () {
+                        final previousMeal = currentMeal;
+                        setState(() {
+                          currentMeal = alt.ad;
+                          currentCalories = alt.kalori.toStringAsFixed(0);
+                          _swapErrorMessage = null;
+                          _lastSwapWasNetworkError = false;
+                        });
+                        Navigator.pop(sheetContext);
+                        // Başarılı swap → yeşil feedback
+                        if (previousMeal != alt.ad) {
+                          _showSuccessSnackBar(alt.ad);
+                        }
+                      },
                     ),
-                    onTap: () {
-                      setState(() {
-                        currentMeal = alt.ad;
-                        currentCalories = alt.kalori.toStringAsFixed(0);
-                      });
-                      Navigator.pop(context);
-                    },
                   )),
+              const SizedBox(height: 8),
             ],
           ),
         );
@@ -205,24 +340,50 @@ class _MealCardState extends State<MealCard> {
   void _showStaticSwapModal() {
     showModalBottomSheet(
       context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (context) {
         return Container(
           padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Alternatif Seçin", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Text('Alternatif Seçin',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
               if (widget.alternatives.isEmpty)
-                const Text("Alternatif yok.")
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Column(
+                    children: [
+                      Icon(Icons.search_off,
+                          size: 40, color: Colors.grey.shade400),
+                      const SizedBox(height: 8),
+                      Text('Alternatif yok.',
+                          style: TextStyle(color: Colors.grey.shade600)),
+                    ],
+                  ),
+                )
               else
                 ...widget.alternatives.map((alt) => ListTile(
+                      leading: const Icon(Icons.restaurant_menu),
                       title: Text(alt),
                       onTap: () {
                         setState(() {
                           currentMeal = alt;
                         });
                         Navigator.pop(context);
+                        _showSuccessSnackBar(alt);
                       },
                     )),
             ],
@@ -256,29 +417,63 @@ class _MealCardState extends State<MealCard> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          decoration: isConsumed ? TextDecoration.lineThrough : null,
+                          decoration:
+                              isConsumed ? TextDecoration.lineThrough : null,
                         ),
                       ),
-                      Text("$currentCalories kcal", style: const TextStyle(color: Colors.grey)),
+                      Text('$currentCalories kcal',
+                          style: const TextStyle(color: Colors.grey)),
                       const SizedBox(height: 4),
                       // Badges
-                      Row(
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
                         children: [
-                          _buildBadge("Budget", Colors.green),
-                          const SizedBox(width: 4),
-                          _buildBadge("High Protein", Colors.blue),
-                          if (_isSwapDisabled) ...[
-                            const SizedBox(width: 4),
-                            _buildBadge("Swap N/A", Colors.orange),
-                          ],
+                          _buildBadge('Budget', Colors.green),
+                          _buildBadge('High Protein', Colors.blue),
+                          if (_isSwapDisabled)
+                            _buildBadge('Swap N/A', Colors.red),
                         ],
                       ),
                       if (_swapErrorMessage != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            _swapErrorMessage!,
-                            style: TextStyle(fontSize: 10, color: Colors.orange.shade700),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info_outline,
+                                  size: 12,
+                                  color: _lastSwapWasNetworkError
+                                      ? Colors.red.shade700
+                                      : Colors.orange.shade700),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  _swapErrorMessage!,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: _lastSwapWasNetworkError
+                                        ? Colors.red.shade700
+                                        : Colors.orange.shade700,
+                                  ),
+                                ),
+                              ),
+                              if (_lastSwapWasNetworkError)
+                                GestureDetector(
+                                  onTap: _showSwapModal,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(left: 4),
+                                    child: Text(
+                                      'Tekrar dene',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.blue.shade700,
+                                        fontWeight: FontWeight.w600,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                     ],
@@ -289,20 +484,31 @@ class _MealCardState extends State<MealCard> {
                   icon: Icon(isLocked ? Icons.lock : Icons.lock_open),
                   color: isLocked ? Colors.red : Colors.grey,
                   onPressed: _toggleLock,
+                  tooltip: isLocked ? 'Kilidi aç' : 'Kilitle',
                 ),
                 // Swap Button (loading + disabled state)
                 _isSwapLoading
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                    ? const Padding(
+                        padding: EdgeInsets.all(12.0),
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
                       )
                     : IconButton(
                         icon: Icon(
                           Icons.swap_horiz,
-                          color: _isSwapDisabled ? Colors.grey.shade300 : null,
+                          color: (isLocked || _isSwapDisabled)
+                              ? Colors.grey.shade300
+                              : Colors.deepPurple,
                         ),
-                        onPressed: (isLocked || _isSwapDisabled) ? null : _showSwapModal,
+                        onPressed: (isLocked || _isSwapDisabled)
+                            ? null
+                            : _showSwapModal,
+                        tooltip: _isSwapDisabled
+                            ? 'Alternatif yok'
+                            : 'Yemek değiştir',
                       ),
               ],
             ),
@@ -316,11 +522,12 @@ class _MealCardState extends State<MealCard> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color),
+        border: Border.all(color: color.withOpacity(0.5)),
       ),
-      child: Text(text, style: TextStyle(fontSize: 10, color: color)),
+      child: Text(text,
+          style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w500)),
     );
   }
 }
