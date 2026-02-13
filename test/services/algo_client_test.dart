@@ -74,7 +74,7 @@ void main() {
           ),
         );
 
-        final request = SwapAlternativesRequest(
+        const request = SwapAlternativesRequest(
           yemekId: 'k1',
           ogunSlot: 'kahvalti',
           diyetTipi: 'normal',
@@ -119,7 +119,7 @@ void main() {
           ),
         );
 
-        final request = SwapAlternativesRequest(
+        const request = SwapAlternativesRequest(
           yemekId: 'k1',
           ogunSlot: 'kahvalti',
           diyetTipi: 'vegan',
@@ -145,7 +145,7 @@ void main() {
           ),
         );
 
-        final request = SwapAlternativesRequest(
+        const request = SwapAlternativesRequest(
           yemekId: 'k1',
           ogunSlot: 'kahvalti',
         );
@@ -174,7 +174,7 @@ void main() {
           ),
         );
 
-        final request = SwapAlternativesRequest(
+        const request = SwapAlternativesRequest(
           yemekId: 'k1',
           ogunSlot: 'kahvalti',
         );
