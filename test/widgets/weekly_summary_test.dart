@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zindeai_app/services/models/plan_models.dart';
 import 'package:zindeai_app/widgets/weekly_summary.dart';
@@ -152,6 +154,7 @@ void main() {
       expect(stats.dailyAvgProtein, 52.5);
     });
 
+    // NaN/Infinity const constructor'da kullanılamaz, bu yüzden const yok.
     test('NaN/Infinity makro değerleri → 0 olarak işlenir', () {
       final plan = Plan(
         planId: 'test-nan',
@@ -169,7 +172,7 @@ void main() {
                 f: 10.0,
                 isConsumed: false,
               ),
-              MealItem(
+              const MealItem(
                 mealId: 'm2',
                 mealType: 'lunch',
                 kcal: 500.0,
@@ -202,7 +205,7 @@ void main() {
       final days = List.generate(
         7,
         (i) => DailyPlan(
-          date: '2026-02-${9 + i}',
+          date: '2026-02-${(9 + i).toString().padLeft(2, '0')}',
           meals: [
             MealItem(
               mealId: 'b$i',
