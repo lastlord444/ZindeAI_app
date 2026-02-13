@@ -1,4 +1,5 @@
 /// Swap Alternatives API modelleri (ALG-001).
+library;
 
 /// /get-alternatives isteği.
 class SwapAlternativesRequest {
