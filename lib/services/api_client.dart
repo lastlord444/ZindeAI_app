@@ -4,16 +4,23 @@ import 'package:flutter/foundation.dart';
 import 'errors.dart';
 
 class ApiClient {
-  static final ApiClient _instance = ApiClient._internal();
+  static ApiClient? _instance;
   late final Dio _dio;
 
   factory ApiClient() {
-    return _instance;
+    _instance ??= ApiClient._internal();
+    return _instance!;
   }
 
   ApiClient._internal() {
-    // Load base URL from .env or use a default
-    final baseUrl = dotenv.env['API_BASE_URL'] ?? 'https://api.zindeai.com/v1';
+    // dotenv yüklenmiş olmalı (main.dart'ta await dotenv.load() çağrılır)
+    // Web'de yüklenemezse varsayılan URL kullanılır
+    String baseUrl;
+    try {
+      baseUrl = dotenv.env['API_BASE_URL'] ?? 'https://api.zindeai.com/v1';
+    } catch (_) {
+      baseUrl = 'https://api.zindeai.com/v1';
+    }
     
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl,

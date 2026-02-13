@@ -1,9 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/generate_plan_screen.dart';
 
 Future<void> main() async {
-  await dotenv.load(fileName: "assets/.env");
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Web'de dotfile (.env) serve edilmez; "env" (dot'suz) kullanıyoruz
+  try {
+    await dotenv.load(fileName: "assets/env");
+  } catch (e) {
+    if (kIsWeb) {
+      // Web'de yüklenemezse devam et (dart-define veya varsayılan değerler kullanılır)
+      debugPrint('Web: env yüklenemedi, dart-define veya varsayılan değerler kullanılacak');
+    } else {
+      rethrow;
+    }
+  }
+  
   runApp(const MyApp());
 }
 
