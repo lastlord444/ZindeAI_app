@@ -35,10 +35,21 @@ cloudflared tunnel --url http://localhost:8000
 flutter run --dart-define=ALGO_BASE_URL=https://random-slug.trycloudflare.com
 ```
 
+## Config Detayları (Issue #19: Hardening)
+
+`AlgoConfig.baseUrl` deterministik öncelik:
+1. **dart-define** (`--dart-define=ALGO_BASE_URL=...`) → geçerli http/https URL kontrolü
+2. **dotenv** (`assets/.env` → `ALGO_BASE_URL=...`) → geçerli http/https URL kontrolü
+3. **Safe fallback** → `http://10.0.2.2:8000` (Android emulator host)
+
+Web notu: `flutter_dotenv` erişimi kısıtlı, dart-define tercih edilir.
+
+Invalid URL (boş, scheme yok, host yok) → fallback'e düşer, crash yapmaz.
+
 ## Test
 ```bash
 flutter test test/services/algo_client_test.dart
-# 5 passed
+# 8 passed (config validation + API tests)
 ```
 
 ## Değişen Dosyalar
