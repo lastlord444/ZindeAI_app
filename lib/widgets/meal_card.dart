@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/algo_client.dart';
 import '../services/errors.dart';
 import '../services/models/swap_models.dart';
+import '../services/models/portion_size.dart';
 
 class MealCard extends StatefulWidget {
   final String mealName;
@@ -257,80 +258,41 @@ class _MealCardState extends State<MealCard> {
     );
   }
 
-  /// API'den gelen 2 alternatifli BottomSheet.
+  /// API'den gelen 2 alternatifli BottomSheet — porsiyon seçici dahil.
   void _showApiSwapModal(SwapAlternativesResponse response) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (sheetContext) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const Text(
-                'Alternatif Seçin',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${response.count} alternatif  •  ${response.tolerance}',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-              ),
-              const Divider(height: 20),
-              ...response.alternatives.map((alt) => Card(
-                    elevation: 0,
-                    color: Colors.grey.shade50,
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: Colors.green.shade50,
-                        child: Icon(Icons.restaurant,
-                            color: Colors.green.shade700, size: 20),
-                      ),
-                      title: Text(alt.ad,
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text(
-                        '${alt.kalori.toStringAsFixed(0)} kcal  •  '
-                        'P: ${alt.protein.toStringAsFixed(0)}g  '
-                        'K: ${alt.karb.toStringAsFixed(0)}g  '
-                        'Y: ${alt.yag.toStringAsFixed(0)}g\n'
-                        '${alt.porsiyon} porsiyon (${alt.porsiyonG.toStringAsFixed(0)}g)',
-                        style: const TextStyle(fontSize: 11, height: 1.4),
-                      ),
-                      isThreeLine: true,
-                      trailing: Icon(Icons.chevron_right,
-                          color: Colors.grey.shade400),
-                      onTap: () {
-                        final previousMeal = currentMeal;
-                        setState(() {
-                          currentMeal = alt.ad;
-                          currentCalories = alt.kalori.toStringAsFixed(0);
-                          _swapErrorMessage = null;
-                          _lastSwapWasNetworkError = false;
-                        });
-                        Navigator.pop(sheetContext);
-                        // Başarılı swap → yeşil feedback
-                        if (previousMeal != alt.ad) {
-                          _showSuccessSnackBar(alt.ad);
-                        }
-                      },
-                    ),
-                  )),
-              const SizedBox(height: 8),
-            ],
-          ),
+        return _ApiSwapSheet(
+          response: response,
+          onSelect: (AlternativeMeal alt, PortionSize portion) {
+            final previousMeal = currentMeal;
+            final scaled = scaleToPortionSize(
+              baseKalori: alt.kalori,
+              baseProtein: alt.protein,
+              baseKarb: alt.karb,
+              baseYag: alt.yag,
+              basePorsiyonG: alt.porsiyonG,
+              portion: portion,
+            );
+            setState(() {
+              currentMeal = alt.ad;
+              currentCalories = scaled['kalori']!.toStringAsFixed(0);
+              _swapErrorMessage = null;
+              _lastSwapWasNetworkError = false;
+            });
+            Navigator.pop(sheetContext);
+            if (previousMeal != alt.ad || portion != PortionSize.medium) {
+              final suffix = portion != PortionSize.medium
+                  ? ' (${portion.displayName})'
+                  : '';
+              _showSuccessSnackBar('${alt.ad}$suffix');
+            }
+          },
         );
       },
     );
@@ -528,6 +490,178 @@ class _MealCardState extends State<MealCard> {
       ),
       child: Text(text,
           style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w500)),
+    );
+  }
+}
+
+// ─── API Swap BottomSheet (StatefulWidget — porsiyon seçimi yönetimi) ─────────
+
+/// BottomSheet widget'ı: API'den gelen alternatifleri porsiyon seçiciyle gösterir.
+class _ApiSwapSheet extends StatefulWidget {
+  final SwapAlternativesResponse response;
+  final void Function(AlternativeMeal alt, PortionSize portion) onSelect;
+
+  const _ApiSwapSheet({
+    required this.response,
+    required this.onSelect,
+  });
+
+  @override
+  State<_ApiSwapSheet> createState() => _ApiSwapSheetState();
+}
+
+class _ApiSwapSheetState extends State<_ApiSwapSheet> {
+  /// Her alternatif için seçili porsiyon boyutu.
+  /// Key: alternatif index, Value: PortionSize.
+  late final Map<int, PortionSize> _selectedPortions;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedPortions = {
+      for (int i = 0; i < widget.response.alternatives.length; i++)
+        i: PortionSize.medium,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Drag handle
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const Text(
+            'Alternatif Seçin',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${widget.response.count} alternatif  •  ${widget.response.tolerance}',
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+          ),
+          const Divider(height: 20),
+          // Alternatif listesi
+          ...List.generate(widget.response.alternatives.length, (index) {
+            final alt = widget.response.alternatives[index];
+            final portion = _selectedPortions[index]!;
+            final scaled = scaleToPortionSize(
+              baseKalori: alt.kalori,
+              baseProtein: alt.protein,
+              baseKarb: alt.karb,
+              baseYag: alt.yag,
+              basePorsiyonG: alt.porsiyonG,
+              portion: portion,
+            );
+
+            return Card(
+              elevation: 0,
+              color: Colors.grey.shade50,
+              margin: const EdgeInsets.only(bottom: 8),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Üst satır: yemek adı + seç butonu
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: Colors.green.shade50,
+                          child: Icon(Icons.restaurant,
+                              color: Colors.green.shade700, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(alt.ad,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15)),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${scaled['kalori']!.toStringAsFixed(0)} kcal  •  '
+                                'P: ${scaled['protein']!.toStringAsFixed(0)}g  '
+                                'K: ${scaled['karb']!.toStringAsFixed(0)}g  '
+                                'Y: ${scaled['yag']!.toStringAsFixed(0)}g',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade700),
+                              ),
+                              Text(
+                                '${scaled['porsiyonG']!.toStringAsFixed(0)}g (${portion.displayName})',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade500),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.check_circle_outline,
+                              color: Colors.green.shade700),
+                          onPressed: () =>
+                              widget.onSelect(alt, portion),
+                          tooltip: 'Bu alternatifi seç',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Porsiyon seçici (S / M / L)
+                    Row(
+                      children: [
+                        Text('Porsiyon:',
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey.shade600)),
+                        const SizedBox(width: 8),
+                        ...PortionSize.values.map((p) {
+                          final isSelected = p == portion;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: ChoiceChip(
+                              label: Text(
+                                '${p.label} (${p.displayName})',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                              selected: isSelected,
+                              selectedColor: Colors.deepPurple.shade100,
+                              backgroundColor: Colors.grey.shade200,
+                              visualDensity: VisualDensity.compact,
+                              onSelected: (_) {
+                                setState(() {
+                                  _selectedPortions[index] = p;
+                                });
+                              },
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 8),
+        ],
+      ),
     );
   }
 }
