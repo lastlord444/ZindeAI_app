@@ -4,6 +4,11 @@ import 'weekly_summary.dart';
 
 /// Haftalık plan görünümü: Gün bazlı expansion + özet.
 /// Loading ve empty state desteği ile (demo polish).
+/// 
+/// Performance optimized:
+/// - ListView.builder ile lazy loading
+/// - Cached hesaplamalar (_DayStats)
+/// - const constructor'lar
 class WeekView extends StatelessWidget {
   final Plan? plan;
   final bool isLoading;
@@ -32,42 +37,67 @@ class WeekView extends StatelessWidget {
 
     // Empty state
     if (plan == null || plan!.days.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.calendar_today, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            const Text(
+            Icon(Icons.calendar_today, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
               'Henüz bir haftalık plan yok',
               style: TextStyle(fontSize: 18, color: Colors.grey),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Yukarıdaki "Plan Oluştur" butonuyla başlayın',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 14, color: Colors.grey),
             ),
           ],
         ),
       );
     }
 
-    // Plan var — özet + gün bazlı liste
-    return ListView(
+    // Plan var — özet + gün bazlı liste (ListView.builder ile lazy)
+    final days = plan!.days;
+    
+    return ListView.builder(
       padding: const EdgeInsets.only(bottom: 20),
-      children: [
-        // Haftalık özet kartı
-        WeeklySummary(plan: plan!),
-        const SizedBox(height: 8),
-        // Gün bazlı expansion tiles
-        ...plan!.days.map((day) => _buildDayTile(day)),
-      ],
+      // +2: weekly summary + spacer
+      itemCount: days.length + 2,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          // Haftalık özet kartı
+          return WeeklySummary(plan: plan!);
+        }
+        if (index == 1) {
+          // Spacer
+          return const SizedBox(height: 8);
+        }
+        // Gün bazlı tile (index-2 çünkü ilk 2 item summary + spacer)
+        final dayIndex = index - 2;
+        return _DayTile(
+          key: ValueKey('day_${days[dayIndex].date}'),
+          day: days[dayIndex],
+        );
+      },
     );
   }
+}
 
-  Widget _buildDayTile(DailyPlan day) {
-    final dayKcal = day.meals.fold<double>(0, (sum, m) => sum + m.kcal);
-    final consumed = day.meals.where((m) => m.isConsumed).length;
+/// Gün tile widget'ı: ExpansionTile ile öğün listesi.
+/// Cached hesaplamalar ile rebuild optimizasyonu.
+class _DayTile extends StatelessWidget {
+  final DailyPlan day;
+
+  const _DayTile({
+    super.key,
+    required this.day,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Hesaplamaları cache et (her rebuild'de fold/where yapma)
+    final stats = _DayStats.from(day);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -78,31 +108,15 @@ class WeekView extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
-          '${day.meals.length} öğün • ${dayKcal.toStringAsFixed(0)} kcal • $consumed/${day.meals.length} tamamlandı',
+          '${stats.mealCount} öğün • ${stats.totalKcal.toStringAsFixed(0)} kcal • ${stats.consumedCount}/${stats.mealCount} tamamlandı',
           style: const TextStyle(fontSize: 12),
         ),
-        children: day.meals.map((item) => ListTile(
-          leading: Icon(
-            _mealTypeIcon(item.mealType),
-            color: item.isConsumed ? Colors.green : Colors.grey,
-          ),
-          title: Text(
-            item.name,
-            style: TextStyle(
-              decoration: item.isConsumed ? TextDecoration.lineThrough : null,
-            ),
-          ),
-          subtitle: Text(
-            '${item.kcal.toStringAsFixed(0)} kcal  •  '
-            'P: ${item.p.toStringAsFixed(0)}g  '
-            'K: ${item.c.toStringAsFixed(0)}g  '
-            'Y: ${item.f.toStringAsFixed(0)}g',
-            style: const TextStyle(fontSize: 11),
-          ),
-          trailing: item.isConsumed
-              ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
-              : const Icon(Icons.circle_outlined, size: 20, color: Colors.grey),
-        )).toList(),
+        children: day.meals
+            .map((item) => _MealListTile(
+                  key: ValueKey('meal_${item.mealId}'),
+                  meal: item,
+                ))
+            .toList(),
       ),
     );
   }
@@ -116,6 +130,42 @@ class WeekView extends StatelessWidget {
     } catch (_) {
       return dateStr;
     }
+  }
+}
+
+/// Öğün ListTile: const constructor ile rebuild önleme.
+class _MealListTile extends StatelessWidget {
+  final MealItem meal;
+
+  const _MealListTile({
+    super.key,
+    required this.meal,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(
+        _mealTypeIcon(meal.mealType),
+        color: meal.isConsumed ? Colors.green : Colors.grey,
+      ),
+      title: Text(
+        meal.name,
+        style: TextStyle(
+          decoration: meal.isConsumed ? TextDecoration.lineThrough : null,
+        ),
+      ),
+      subtitle: Text(
+        '${meal.kcal.toStringAsFixed(0)} kcal  •  '
+        'P: ${meal.p.toStringAsFixed(0)}g  '
+        'K: ${meal.c.toStringAsFixed(0)}g  '
+        'Y: ${meal.f.toStringAsFixed(0)}g',
+        style: const TextStyle(fontSize: 11),
+      ),
+      trailing: meal.isConsumed
+          ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
+          : const Icon(Icons.circle_outlined, size: 20, color: Colors.grey),
+    );
   }
 
   IconData _mealTypeIcon(String mealType) {
@@ -137,5 +187,28 @@ class WeekView extends StatelessWidget {
       default:
         return Icons.restaurant;
     }
+  }
+}
+
+/// Gün bazlı cached hesaplamalar.
+/// Her rebuild'de fold/where çağırmamak için.
+class _DayStats {
+  final int mealCount;
+  final double totalKcal;
+  final int consumedCount;
+
+  const _DayStats({
+    required this.mealCount,
+    required this.totalKcal,
+    required this.consumedCount,
+  });
+
+  factory _DayStats.from(DailyPlan day) {
+    final meals = day.meals;
+    return _DayStats(
+      mealCount: meals.length,
+      totalKcal: meals.fold<double>(0, (sum, m) => sum + m.kcal),
+      consumedCount: meals.where((m) => m.isConsumed).length,
+    );
   }
 }
