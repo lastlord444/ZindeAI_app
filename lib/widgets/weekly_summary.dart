@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/log_service.dart';
 import '../services/models/plan_models.dart';
 
 /// Haftalık özet widget: Toplam kcal, P/C/F ve adherence.
@@ -145,6 +146,7 @@ class WeeklyStatsCalculator {
   /// Plan verisi üzerinden haftalık toplam ve adherence hesapla.
   /// Null/NaN/Infinity makro değerleri 0 kabul edilir.
   static WeeklyStats calculate(Plan plan) {
+    const tag = 'WeeklyStats';
     double totalKcal = 0;
     double totalProtein = 0;
     double totalCarbs = 0;
@@ -169,6 +171,14 @@ class WeeklyStatsCalculator {
 
     // Adherence: consumedMeals / totalMeals (division-by-zero koruması)
     final adherence = totalMeals > 0 ? consumedMeals / totalMeals : 0.0;
+
+    LogService.d(tag,
+      'calculate: $daysWithMeals days, $totalMeals meals, '
+      'kcal=${totalKcal.toStringAsFixed(0)}, '
+      'P=${totalProtein.toStringAsFixed(0)}, '
+      'C=${totalCarbs.toStringAsFixed(0)}, '
+      'F=${totalFat.toStringAsFixed(0)}, '
+      'adherence=${(adherence * 100).toStringAsFixed(0)}%');
 
     return WeeklyStats(
       totalKcal: totalKcal,
