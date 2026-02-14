@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'algo_config.dart';
 import 'errors.dart';
+import 'log_service.dart';
 import 'models/swap_models.dart';
 
 /// Swap Alternatives Service HTTP istemcisi (ALG-001).
@@ -29,7 +30,7 @@ class AlgoClient {
         requestBody: true,
         responseBody: true,
         logPrint: (obj) {
-          if (kDebugMode) debugPrint('ALGO_LOG: $obj');
+          if (kDebugMode) LogService.d('AlgoClient', obj.toString());
         },
       ));
     }
@@ -68,6 +69,7 @@ class AlgoClient {
         // 422 → InsufficientPoolException (retry YOK)
         if (e.response?.statusCode == 422) {
           final data = e.response?.data;
+          LogService.w('AlgoClient', '422 InsufficientPool', error: data);
           if (data is Map<String, dynamic>) {
             throw InsufficientPoolException.fromJson(data);
           }
@@ -89,6 +91,7 @@ class AlgoClient {
         final isLastAttempt = attempt == AlgoConfig.maxRetries - 1;
 
         if (!isRetryable || isLastAttempt) {
+          LogService.e('AlgoClient', 'Request failed (attempt ${attempt + 1})', error: e);
           throw _mapDioError(e);
         }
 
@@ -96,12 +99,8 @@ class AlgoClient {
         final delay = Duration(
           seconds: AlgoConfig.backoffSeconds[attempt],
         );
-        if (kDebugMode) {
-          debugPrint(
-            'ALGO_RETRY: attempt ${attempt + 1}/${AlgoConfig.maxRetries}, '
-            'waiting ${delay.inSeconds}s',
-          );
-        }
+        LogService.i('AlgoClient',
+          'Retry ${attempt + 1}/${AlgoConfig.maxRetries}, waiting ${delay.inSeconds}s');
         await Future<void>.delayed(delay);
       }
     }
